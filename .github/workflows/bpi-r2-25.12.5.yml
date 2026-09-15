@@ -87,7 +87,7 @@ jobs:
           test "${#manifests[@]}" -eq 1
           grep -Eq '^kmod-rtc-ds1307 - ' "${manifests[0]}"
           ! grep -Eq '^(i2c-tools|libi2c) - ' "${manifests[0]}"
-          staging_dir/host/bin/dumpimage -l "${sysupgrades[0]}" | tee fit-layout.txt
+          staging_dir/host/bin/mkimage -l "${sysupgrades[0]}" | tee fit-layout.txt
           grep -F 'mt7623n-bananapi-bpi-r2-ds3231' fit-layout.txt
           strings "${uboots[0]}" | grep -F 'bootconf=config-1'
           strings "${uboots[0]}" | grep -F 'bootconf_recovery=config-1'
