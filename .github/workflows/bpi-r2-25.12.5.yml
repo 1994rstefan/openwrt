@@ -6,7 +6,7 @@ on:
       - "25.12.5-bpi_r2.rc-*"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: bpi-r2-25.12.5-${{ github.ref }}
@@ -108,21 +108,31 @@ jobs:
         run: |
           set -euo pipefail
           mkdir release
-          cp bin/targets/mediatek/mt7623/*-bananapi_bpi-r2-* release/
-          cp bin/targets/mediatek/mt7623/*.manifest release/
-          for file in config.buildinfo feeds.buildinfo profiles.json version.buildinfo; do
-            test ! -f "bin/targets/mediatek/mt7623/$file" || cp "bin/targets/mediatek/mt7623/$file" release/
-          done
-          cp fit-layout.txt kernel-abi.txt release/
+          cp bin/targets/mediatek/mt7623/*-bananapi_bpi-r2-sdcard.img.gz release/
+          cp bin/targets/mediatek/mt7623/*-bananapi_bpi-r2-squashfs-sysupgrade.itb release/
           (cd release && sha256sum -- * > sha256sums)
 
-      - name: Upload BPI-R2 release candidate
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: bpi-r2-${{ github.ref_name }}
-          path: release/
-          if-no-files-found: error
-          retention-days: 14
+      - name: Publish GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > release-notes.md <<'EOF'
+          OpenWrt 25.12.5 release candidate for the Banana Pi BPI-R2.
+
+          The SD card image contains the bootloader, recovery image and production root filesystem.
+          The sysupgrade image updates an existing installation without replacing the bootloader.
+          EOF
+          assets=(release/*-sdcard.img.gz release/*-squashfs-sysupgrade.itb release/sha256sums)
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$GITHUB_REF_NAME" "${assets[@]}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file release-notes.md \
+              --prerelease \
+              --verify-tag
+          fi
 
       - name: Upload build logs on failure
         if: failure()
