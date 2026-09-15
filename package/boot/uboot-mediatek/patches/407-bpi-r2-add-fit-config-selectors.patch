@@ -44,13 +44,13 @@ index b445970..813e53f 100644
  _firstboot=setenv _firstboot ; led $bootled_pwr off ;led $bootled_rec on ; run _checkbootedfrom _switch_to_menu _update_bootcmd _update_bootcmd2 _init_env boot_first
 -_set_bootcmd_sdmmc=setenv boot_production "led $bootled_rec off ; led $bootled_pwr on ; run sdmmc_read_production && bootm $loadaddr ; led $bootled_pwr off"
 -_set_bootcmd_emmc=setenv boot_production "led $bootled_rec off ; led $bootled_pwr on ; run emmc_read_production && bootm $loadaddr ; led $bootled_pwr off"
-+_set_bootcmd_sdmmc=setenv boot_production "led $bootled_rec off ; led $bootled_pwr on ; run sdmmc_read_production && bootm $loadaddr#$bootconf ; led $bootled_pwr off"
-+_set_bootcmd_emmc=setenv boot_production "led $bootled_rec off ; led $bootled_pwr on ; run emmc_read_production && bootm $loadaddr#$bootconf ; led $bootled_pwr off"
++_set_bootcmd_sdmmc=setenv boot_production 'led $bootled_rec off ; led $bootled_pwr on ; run sdmmc_read_production && bootm $loadaddr#$bootconf ; led $bootled_pwr off'
++_set_bootcmd_emmc=setenv boot_production 'led $bootled_rec off ; led $bootled_pwr on ; run emmc_read_production && bootm $loadaddr#$bootconf ; led $bootled_pwr off'
  _update_bootcmd=setenv _update_bootcmd ; if test "$bootedfrom" = "SD" ; then run _set_bootcmd_sdmmc ; else run _set_bootcmd_emmc ; fi ; setenv _set_bootcmd_sdmmc ; setenv _set_bootcmd_emmc
 -_set_bootcmd2_sdmmc=setenv boot_recovery "led $bootled_pwr off ; led $bootled_rec on ; run sdmmc_read_recovery && bootm $loadaddr ; led $bootled_rec off"
 -_set_bootcmd2_emmc=setenv boot_recovery "led $bootled_pwr off ; led $bootled_rec on ; run emmc_read_recovery && bootm $loadaddr ; led $bootled_rec off"
-+_set_bootcmd2_sdmmc=setenv boot_recovery "led $bootled_pwr off ; led $bootled_rec on ; run sdmmc_read_recovery && bootm $loadaddr#$bootconf_recovery ; led $bootled_rec off"
-+_set_bootcmd2_emmc=setenv boot_recovery "led $bootled_pwr off ; led $bootled_rec on ; run emmc_read_recovery && bootm $loadaddr#$bootconf_recovery ; led $bootled_rec off"
++_set_bootcmd2_sdmmc=setenv boot_recovery 'led $bootled_pwr off ; led $bootled_rec on ; run sdmmc_read_recovery && bootm $loadaddr#$bootconf_recovery ; led $bootled_rec off'
++_set_bootcmd2_emmc=setenv boot_recovery 'led $bootled_pwr off ; led $bootled_rec on ; run emmc_read_recovery && bootm $loadaddr#$bootconf_recovery ; led $bootled_rec off'
  _update_bootcmd2=setenv _update_bootcmd2 ; if test "$bootedfrom" = "SD" ; then run _set_bootcmd2_sdmmc ; else run _set_bootcmd2_emmc ; fi ; setenv _set_bootcmd2_sdmmc ; setenv _set_bootcmd2_emmc
  _switch_to_menu=setenv _switch_to_menu ; setenv bootdelay 3 ; setenv bootmenu_delay 3 ; setenv bootmenu_0 $bootmenu_0d ; setenv bootmenu_0d ; run _bootmenu_update_title
  _bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_title "$bootmenu_title  [0;36m[$bootedfrom][0m    [33m$ver[0m" ; run _set_bm2
