@@ -43,13 +43,19 @@ jobs:
 
       - name: Configure BPI-R2 image
         run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error \
+            https://downloads.openwrt.org/releases/25.12.5/targets/mediatek/mt7623/config.buildinfo \
+            --output official.config
+          printf '%s  %s\n' \
+            6092a235a6451e5425d00d5633b8528c4d242a0fa6ab3a3e554234d02c764ed2 \
+            official.config | sha256sum --check --strict
           cat > .config <<'EOF'
           CONFIG_TARGET_mediatek=y
           CONFIG_TARGET_mediatek_mt7623=y
           CONFIG_TARGET_mediatek_mt7623_DEVICE_bananapi_bpi-r2=y
           CONFIG_TARGET_ROOTFS_INITRAMFS=y
           CONFIG_TARGET_ROOTFS_SQUASHFS=y
-          CONFIG_TARGET_ROOTFS_PARTSIZE=400
           CONFIG_ALL_KMODS=y
           CONFIG_DEVEL=y
           CONFIG_IMAGEOPT=y
@@ -61,6 +67,7 @@ jobs:
           # CONFIG_PACKAGE_i2c-tools is not set
           # CONFIG_PACKAGE_libi2c is not set
           EOF
+          grep -E '^CONFIG_PACKAGE_[A-Za-z0-9_-]+=y$' official.config >> .config
           printf 'CONFIG_VERSION_NUMBER="%s"\n' "$GITHUB_REF_NAME" >> .config
           printf 'CONFIG_VERSION_CODE="r%s"\n' "${GITHUB_SHA:0:12}" >> .config
           printf '%s\n' 'CONFIG_VERSION_REPO="https://downloads.openwrt.org/releases/25.12.5"' >> .config
@@ -86,7 +93,47 @@ jobs:
           test "${#uboots[@]}" -eq 1
           test "${#manifests[@]}" -eq 1
           grep -Eq '^kmod-rtc-ds1307 - ' "${manifests[0]}"
+          grep -Eq '^luci - ' "${manifests[0]}"
+          grep -Eq '^luci-ssl - ' "${manifests[0]}"
+          grep -Eq '^rpcd-mod-luci - ' "${manifests[0]}"
+          grep -Eq '^uhttpd - ' "${manifests[0]}"
+          grep -Eq '^uhttpd-mod-ubus - ' "${manifests[0]}"
           ! grep -Eq '^(i2c-tools|libi2c) - ' "${manifests[0]}"
+          curl --fail --location --silent --show-error \
+            https://downloads.openwrt.org/releases/25.12.5/targets/mediatek/mt7623/openwrt-25.12.5-mediatek-mt7623.manifest \
+            --output official.manifest
+          cat > bpi-r2-extra-packages <<'EOF'
+          e2fsprogs
+          kmod-ata-ahci
+          kmod-ata-core
+          kmod-hwmon-core
+          kmod-i2c-core
+          kmod-nls-base
+          kmod-regmap-core
+          kmod-regmap-i2c
+          kmod-rtc-ds1307
+          kmod-scsi-core
+          kmod-usb-common
+          kmod-usb-core
+          kmod-usb-xhci-hcd
+          kmod-usb-xhci-mtk
+          kmod-usb3
+          libblkid1
+          libcomerr0
+          libe2p2
+          libext2fs2
+          libf2fs6
+          libpthread
+          librt
+          libss2
+          libuuid1
+          mkf2fs
+          EOF
+          cut -d' ' -f1 official.manifest | LC_ALL=C sort -u > expected-packages
+          cat bpi-r2-extra-packages >> expected-packages
+          LC_ALL=C sort -u -o expected-packages expected-packages
+          cut -d' ' -f1 "${manifests[0]}" | LC_ALL=C sort -u > built-packages
+          diff -u expected-packages built-packages
           staging_dir/host/bin/mkimage -l "${sysupgrades[0]}" | tee fit-layout.txt
           grep -F 'mt7623n-bananapi-bpi-r2-ds3231' fit-layout.txt
           strings "${uboots[0]}" | grep -F 'bootconf=config-1'
@@ -119,6 +166,7 @@ jobs:
           cat > release-notes.md <<'EOF'
           OpenWrt 25.12.5 firmware for the Banana Pi BPI-R2.
 
+          The installed package set follows the official OpenWrt 25.12.5 image and includes LuCI with HTTPS support.
           The SD card image contains the bootloader, recovery image and production root filesystem.
           The sysupgrade image updates an existing installation without replacing the bootloader.
           EOF
