@@ -1,9 +1,9 @@
-name: Build BPI-R2 25.12.5 release candidate
+name: Build BPI-R2 25.12.5 firmware
 
 on:
   push:
     tags:
-      - "25.12.5-bpi_r2.rc-*"
+      - "25.12.5-bpi_r2.*"
 
 permissions:
   contents: write
@@ -112,17 +112,21 @@ jobs:
           cp bin/targets/mediatek/mt7623/*-bananapi_bpi-r2-squashfs-sysupgrade.itb release/
           (cd release && sha256sum -- * > sha256sums)
 
-      - name: Publish GitHub prerelease
+      - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > release-notes.md <<'EOF'
-          OpenWrt 25.12.5 release candidate for the Banana Pi BPI-R2.
+          OpenWrt 25.12.5 firmware for the Banana Pi BPI-R2.
 
           The SD card image contains the bootloader, recovery image and production root filesystem.
           The sysupgrade image updates an existing installation without replacing the bootloader.
           EOF
           assets=(release/*-sdcard.img.gz release/*-squashfs-sysupgrade.itb release/sha256sums)
+          release_flags=()
+          if [[ "$GITHUB_REF_NAME" == *.rc-* ]]; then
+            release_flags+=(--prerelease)
+          fi
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber --repo "$GITHUB_REPOSITORY"
           else
@@ -130,7 +134,7 @@ jobs:
               --repo "$GITHUB_REPOSITORY" \
               --title "$GITHUB_REF_NAME" \
               --notes-file release-notes.md \
-              --prerelease \
+              "${release_flags[@]}" \
               --verify-tag
           fi
 
