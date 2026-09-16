@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout tagged source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Install build dependencies
         run: |
@@ -134,6 +136,15 @@ jobs:
           LC_ALL=C sort -u -o expected-packages expected-packages
           cut -d' ' -f1 "${manifests[0]}" | LC_ALL=C sort -u > built-packages
           diff -u expected-packages built-packages
+          cp bpi-r2-extra-packages version-exceptions
+          printf '%s\n' fit-check-sign uboot-envtools >> version-exceptions
+          awk 'NR == FNR { skip[$1] = 1; next } !($1 in skip)' \
+            version-exceptions official.manifest > official-common-packages
+          awk 'NR == FNR { skip[$1] = 1; next } !($1 in skip)' \
+            version-exceptions "${manifests[0]}" > built-common-packages
+          diff -u official-common-packages built-common-packages
+          grep -Fx 'fit-check-sign - 2025.10-r4' "${manifests[0]}"
+          grep -Fx 'uboot-envtools - 2025.10-r4' "${manifests[0]}"
           staging_dir/host/bin/mkimage -l "${sysupgrades[0]}" | tee fit-layout.txt
           grep -F 'mt7623n-bananapi-bpi-r2-ds3231' fit-layout.txt
           strings "${uboots[0]}" | grep -F 'bootconf=config-1'
